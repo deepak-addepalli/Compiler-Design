@@ -5,6 +5,9 @@ import cop5556fa17.Scanner.Token;
 public abstract class ASTNode {
 	
 	final public Token firstToken;
+	private Type type_name;
+	private Declaration dec;
+	private boolean cartesian;
 	
 	public ASTNode(Token firstToken) {
 		super();
@@ -36,6 +39,30 @@ public abstract class ASTNode {
 		} else if (!firstToken.equals(other.firstToken))
 			return false;
 		return true;
+	}
+	
+	public Type getType(){
+		return type_name;
+	}
+
+	public void setType(Type t){
+		type_name = t;
+	}
+
+	public Declaration getDec(){
+		return dec;
+	}
+
+	public void setDec(Declaration dec){
+		this.dec = dec;
+	}
+
+	public boolean isCartesian(){
+		return cartesian;
+	}
+
+	public void setCartesian(boolean flag){
+		cartesian = flag;
 	}
 	
 	
