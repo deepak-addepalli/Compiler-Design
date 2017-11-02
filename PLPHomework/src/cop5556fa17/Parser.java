@@ -41,7 +41,7 @@ public class Parser {
 	}
 
 	public void match(Kind k) throws SyntaxException {
-
+		System.out.println("t.kind  " + t.kind + " k  " + k);
 		if (t.kind == k) {
 			t = scanner.nextToken();
 		} else {
@@ -91,12 +91,8 @@ public class Parser {
 			return e;
 		}
 		else if (t.kind == Kind.BOOLEAN_LITERAL) {
-			boolean flag = false;
-			if(t.getText().equals("true")){
-				flag = true;
-			}
 			match(Kind.BOOLEAN_LITERAL);
-			return new Expression_BooleanLit(first,flag);
+			return new Expression_BooleanLit(first,first.getText().equals("true"));
 		}
 		else if (t.kind == Kind.KW_sin || t.kind == Kind.KW_cos || t.kind == Kind.KW_atan
 				|| t.kind == Kind.KW_abs || t.kind == Kind.KW_cart_x || t.kind == Kind.KW_cart_y
@@ -109,7 +105,7 @@ public class Parser {
 		}
 	}
 
-	Expression functionApplication() throws SyntaxException {
+	Expression_FunctionApp functionApplication() throws SyntaxException {
 		Token first = t;
 		functionName();
 		if (t.kind == Kind.LPAREN) {
@@ -130,11 +126,11 @@ public class Parser {
 	}
 
 	Index selector() throws SyntaxException {
-		Token first = t;
+
 		Expression e0 = expression();
 		match(Kind.COMMA);
 		Expression e1 = expression();
-		return new Index(first,e0,e1);
+		return new Index(e0.firstToken,e0,e1);
 	}
 
 	Statement statement() throws SyntaxException {
@@ -290,20 +286,22 @@ public class Parser {
 
 		else if (t.kind == Kind.OP_EXCL) {
 			match(Kind.OP_EXCL);
-			return unaryExpression();
-		} else
+			return new Expression_Unary(first,first,unaryExpression());
+		}
+
+		else
 			throw new SyntaxException(t, " error at unaryExpressionNotPlusMinus");
 	}
 
 	Expression unaryExpression() throws SyntaxException {
-
+		Token first = t;
 		if (t.kind == Kind.OP_PLUS) {
 			match(Kind.OP_PLUS);
-			return unaryExpression();
+			return new Expression_Unary(first,first,unaryExpression());
 		}
 		else if (t.kind == Kind.OP_MINUS) {
 			match(Kind.OP_MINUS);
-			return unaryExpression();
+			return new Expression_Unary(first,first,unaryExpression());
 		}
 		else if (t.kind == Kind.KW_Z || t.kind == Kind.KW_A || t.kind == Kind.KW_R || t.kind == Kind.KW_DEF_X
 				|| t.kind == Kind.KW_DEF_Y || t.kind == Kind.IDENTIFIER || t.kind == Kind.OP_EXCL
@@ -336,7 +334,6 @@ public class Parser {
 	 */
 	Expression expression() throws SyntaxException {
 
-		Token first = t;
 		Expression e0 = orExpression();
 		Expression e1 = null;
 		Expression e2 = null;
@@ -345,14 +342,14 @@ public class Parser {
 			e1 = expression();
 			match(Kind.OP_COLON);
 			e2 = expression();
-			return new Expression_Conditional(first,e0,e1,e2);
+			return new Expression_Conditional(e0.firstToken,e0,e1,e2);
 		}
 		return e0;
 	}
 
 
 	Expression multExpression() throws SyntaxException {
-		Token first = t;
+
 		Expression e0 = null;
 		Expression e1 = null;
 		e0 = unaryExpression();
@@ -366,13 +363,13 @@ public class Parser {
 				match(Kind.OP_MOD);
 			}
 			e1 = unaryExpression();
-			e0 = new Expression_Binary(first,e0,tk,e1);
+			e0 = new Expression_Binary(e0.firstToken,e0,tk,e1);
 		}
 		return e0;
 	}
 
 	Expression addExpression() throws SyntaxException {
-		Token first = t;
+
 		Expression e0 = null;
 		Expression e1 = null;
 		e0 = multExpression();
@@ -384,13 +381,13 @@ public class Parser {
 				match(Kind.OP_MINUS);
 			}
 			e1 = multExpression();
-			e0 = new Expression_Binary(first,e0,tk,e1);
+			e0 = new Expression_Binary(e0.firstToken,e0,tk,e1);
 		}
 		return e0;
 	}
 
 	Expression relExpression() throws SyntaxException {
-		Token first = t;
+
 		Expression e0 = null;
 		Expression e1 = null;
 		e0 = addExpression();
@@ -409,14 +406,13 @@ public class Parser {
 				match(Kind.OP_GE);
 			}
 			e1 = addExpression();
-			e0 = new Expression_Binary(first,e0,tk,e1);
+			e0 = new Expression_Binary(e0.firstToken,e0,tk,e1);
 		}
 		return e0;
 	}
 
 	Expression eqExpression() throws SyntaxException {
 
-		Token first = t;
 		Expression e0 = null;
 		Expression e1 = null;
 		e0 = relExpression();
@@ -429,13 +425,13 @@ public class Parser {
 				match(Kind.OP_NEQ);
 			}
 			e1 = relExpression();
-			e0 = new Expression_Binary(first,e0,tk,e1);
+			e0 = new Expression_Binary(e0.firstToken,e0,tk,e1);
 		}
 		return e0;
 	}
 
 	Expression andExpression() throws SyntaxException {
-		Token first = t;
+
 		Expression e0 = null;
 		Expression e1 = null;
 		e0 = eqExpression();
@@ -443,20 +439,21 @@ public class Parser {
 			Token tk = t;
 			match(Kind.OP_AND);
 			e1 = eqExpression();
-			e0 = new Expression_Binary(first,e0,tk,e1);
+			e0 = new Expression_Binary(e0.firstToken,e0,tk,e1);
 		}
 		return e0;
 	}
 
 	Expression orExpression() throws SyntaxException {
-		Token first = t;
+
 		Expression e0 = null;
 		Expression e1 = null;
 		e0 = andExpression();
 		while (t.kind == Kind.OP_OR) {
+			Token tk = t;
 			match(Kind.OP_OR);
 			e1 = andExpression();
-			e0 = new Expression_Binary(first,e0,t,e1);
+			e0 = new Expression_Binary(e0.firstToken,e0,tk,e1);
 		}
 		return e0;
 	}
@@ -464,14 +461,14 @@ public class Parser {
 	Expression identOrPixelSelectorExpression() throws SyntaxException {
 		Token first = t;
 		match(Kind.IDENTIFIER);
-		Expression_PixelSelector eps = indentOrPixNext(first);
+		Expression_PixelSelector eps = indentOrPixelNext(first);
 		if(eps == null){
 			return new Expression_Ident(first,first);
 		}
 		return eps;
 	}
 
-	Expression_PixelSelector indentOrPixNext(Token first) throws SyntaxException {
+	Expression_PixelSelector indentOrPixelNext(Token first) throws SyntaxException {
 		if (t.kind == Kind.LSQUARE) {
 			match(Kind.LSQUARE);
 			Index idx = selector();
@@ -506,7 +503,7 @@ public class Parser {
 	Declaration declaration() throws SyntaxException {
 
 		if (t.kind == Kind.KW_int || t.kind == Kind.KW_boolean) {
-			return variableDeclartion();
+			return variableDeclaration();
 		}
 		else if (t.kind == Kind.KW_image) {
 			return imageDeclaration();
@@ -549,7 +546,7 @@ public class Parser {
 		return new Declaration_SourceSink(first,first,tk,s);
 	}
 
-	Declaration_Variable variableDeclartion() throws SyntaxException {
+	Declaration_Variable variableDeclaration() throws SyntaxException {
 		Token first = t;
 		varType();
 		Token tk = t;
